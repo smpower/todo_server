@@ -62,7 +62,7 @@ app.post('/todo/test/post', function(req, res, next) {
   });
 });
 
-app.post('/todo/register', function(req, res, next) {
+app.post('/todo/regist', function(req, res, next) {
   const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, ?)`;
   const addSqlParams = [req.body.username, req.body.email, req.body.password];
 
@@ -78,8 +78,8 @@ app.post('/todo/register', function(req, res, next) {
   // connection.query('INSERT INTO user(username, email, password) VALUES(?, ? ,?)', [req.body.username, req.body.email, req.body.password],
   connection.query(addSql, addSqlParams, function(error, results, fields) {
     if (error) throw error;
-    console.log(results);
-    res.json(fields);
+    if (results.affectedRows === 1) res.json({isRegisted: true});
+    else res.json({isRegisted: false});
   });
 
   // connection.query('SELECT * FROM user', function (error, results, fields) {
