@@ -63,9 +63,8 @@ app.post('/todo/test/post', function(req, res, next) {
 });
 
 app.post('/todo/register', function(req, res, next) {
-  const addSql = 'INSERT INTO user(username, email, password) VALUES(?, ?, ?)';
+  const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, ?)`;
   const addSqlParams = [req.body.username, req.body.email, req.body.password];
-  console.log(req.body);
 
   var connection = mysql.createConnection({
     host     : 'localhost',
@@ -77,13 +76,11 @@ app.post('/todo/register', function(req, res, next) {
   connection.connect();
 
   // connection.query('INSERT INTO user(username, email, password) VALUES(?, ? ,?)', [req.body.username, req.body.email, req.body.password],
-  connection.query(addSql, addSqlParams,
-    function(error, results, fields) {
-      if (error) throw error;
-      console.log(results);
-      console.log(fields);
-      res.json(fields);
-    });
+  connection.query(addSql, addSqlParams, function(error, results, fields) {
+    if (error) throw error;
+    console.log(results);
+    res.json(fields);
+  });
 
   // connection.query('SELECT * FROM user', function (error, results, fields) {
   //   if (error) throw error;
