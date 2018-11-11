@@ -91,6 +91,26 @@ app.post('/todo/regist', function(req, res, next) {
   connection.end();
 });
 
+app.post('/todo/login', function(req, res, next) {
+  const selectSql = `SELECT * FROM user WHERE email = ? AND password = ?`;
+  const selectSqlParams = [req.body.email, req.body.password];
+
+  const connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'ruofei',
+    password: 'rf.wangchn',
+    database: 'todo'
+  });
+
+  connection.connect();
+
+  connection.query(selectSql, selectSqlParams, function(error, results, fields) {
+    if (error) throw error;
+    if (results.length === 1) res.json({isLogined: true});
+    else res.json({isLogined: false});
+  });
+});
+
 http.createServer(app).listen(app.get('port'), function() {
   console.log('Express server listening on port: ' + app.get('port'));
 });
