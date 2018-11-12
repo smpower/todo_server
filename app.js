@@ -64,7 +64,7 @@ app.post('/todo/test/post', function(req, res, next) {
 });
 
 app.post('/todo/regist', function(req, res, next) {
-  const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, password(?))`;
+  const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, ?)`;
   const addSqlParams = [req.body.username, req.body.email, req.body.password];
 
   var connection = mysql.createConnection({
@@ -93,7 +93,7 @@ app.post('/todo/regist', function(req, res, next) {
 });
 
 app.post('/todo/login', function(req, res, next) {
-  const selectSql = `SELECT * FROM user WHERE email = ? AND password = password(?)`;
+  const selectSql = `SELECT * FROM user WHERE email = ? AND password = ?`;
   const selectSqlParams = [req.body.email, req.body.password];
 
   const connection = mysql.createConnection({
