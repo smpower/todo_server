@@ -64,7 +64,6 @@ app.post('/todo/test/post', function(req, res, next) {
 });
 
 app.post('/todo/regist', function(req, res, next) {
-  console.log(req.body);
   const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, password(?))`;
   const addSqlParams = [req.body.username, req.body.email, req.body.password];
 
@@ -108,6 +107,7 @@ app.post('/todo/login', function(req, res, next) {
 
   connection.query(selectSql, selectSqlParams, function(error, results, fields) {
     if (error) throw error;
+    console.log(results);
     if (results.length === 1) res.json({isLogined: true});
     else res.json({isLogined: false});
   });
