@@ -65,7 +65,7 @@ app.post('/todo/test/post', function(req, res, next) {
 
 app.post('/todo/regist', function(req, res, next) {
   console.log(req.body);
-  const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, ?)`;
+  const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, password(?))`;
   const addSqlParams = [req.body.username, req.body.email, req.body.password];
 
   var connection = mysql.createConnection({
