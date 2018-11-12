@@ -17,7 +17,7 @@ var connection = mysql.createConnection({
 });
 
 // all environments
-app.set('port', 8080);
+app.set('port', 1115);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
