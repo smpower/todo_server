@@ -4,19 +4,9 @@
 
 var express = require('express');
 var http = require('http');
-var https = require('https');
-var fs = require('fs');
-var path = require('path');
 var bodyParser = require('body-parser');
 var mysql = require('mysql');
 
-// 根据项目路径导入生成的证书文件
-var privateKey = fs.readFileSync(path.join(__dirname, './certificate/private.pem'), 'UTF-8');
-var certificate = fs.readFileSync(path.join(__dirname, './certificate/file.crt'), 'UTF-8');
-var credentials = {key: privateKey, cert: certificate};
-
-// var httpServer = http.createServer(app);
-// var httpsServer = https.createServer(credentials, app);
 
 var app = express();
 var connection = mysql.createConnection({
@@ -27,10 +17,7 @@ var connection = mysql.createConnection({
 });
 
 // all environments
-// 分别设置 http 和 https 的访问端口
-// app.set('port', 8080);
-app.set('PORT', 1115);
-app.set('SSLPORT', 1116);
+app.set('port', 8080);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
@@ -126,35 +113,6 @@ app.post('/todo/login', function(req, res, next) {
   });
 });
 
-http.createServer(app).listen(app.get('PORT'), function() {
-  console.log('Express server listening on port: ' + app.get('PORT'));
+http.createServer(app).listen(app.get('port'), function() {
+  console.log('Express server listening on port: ' + app.get('port'));
 });
-
-https.createServer(credentials, app).listen(app.get('SSLPORT'), function() {
-  console.log('Express server listening on port: ' + app.get('SSLPORT'));
-});
-
-// http.createServer(app).listen(app.get('port'), function() {
-//   console.log('Express server listening on port: ' + app.get('port'));
-// });
-
-// // 创建 http 服务器
-// httpServer.listen(PORT, function() {
-//   console.log('HTTP Server is running on port: %s', PORT);
-// });
-// 
-// 
-// // 创建 https 服务器
-// httpsServer.listen(SSLPORT, function() {
-//   console.log('HTTPS Server is running on port: %s', SSLPORT);
-// });
-// 
-// // 根据请求判断是 http 还是 https
-// app.get('/wundertodo/test', function(req, res) {
-//   if (req.protocol === 'https') {
-//     res.status(200).send('This is https visit!');
-//   }
-//   else {
-//     res.status(200).send('This is http visit!');
-//   }
-// });
