@@ -126,8 +126,8 @@ http.createServer(app).listen(app.get('port'), function() {
 });
 
 https.createServer({
-  key: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.key'),
-  cert: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.crt')
+  key: fs.readFileSync('./certificate/key.pem'),
+  cert: fs.readFileSync('./certificate/cert.crt')
 }, app).listen(1116, function() {
   console.log('Express HTTPS server listening on port: 1116');
 });
