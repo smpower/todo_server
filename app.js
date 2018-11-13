@@ -19,7 +19,7 @@ var connection = mysql.createConnection({
 });
 
 // all environments
-app.set('port', 80);
+app.set('port', 1115);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
@@ -126,13 +126,23 @@ http.createServer(app).listen(app.get('port'), function() {
 });
 
 https.createServer({
-  key: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.key'),
-  cert: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.crt')
-}, app).listen(443, function() {
-  console.log('Express HTTPS server listening on port: 1116');
-});
+  key: fs.readFileSync('./certificate/key.pem'),
+  cert: fs.readFileSync('./certificate/cert.pem')
+}, app).listen(1116);
 
 app.get('/', function (req, res) {
   res.header('Content-type', 'text/html');
   return res.end('<h1>Hello, Secure World!</h1>');
 });
+
+// https.createServer({
+//   key: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.key'),
+//   cert: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.crt')
+// }, app).listen(1116, function() {
+//   console.log('Express HTTPS server listening on port: 1116');
+// });
+// 
+// app.get('/', function (req, res) {
+//   res.header('Content-type', 'text/html');
+//   return res.end('<h1>Hello, Secure World!</h1>');
+// });
