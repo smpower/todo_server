@@ -127,7 +127,7 @@ http.createServer(app).listen(app.get('port'), function() {
 
 https.createServer({
   key: fs.readFileSync('./certificate/key.pem'),
-  cert: fs.readFileSync('./certificate/cert.crt')
+  cert: fs.readFileSync('./certificate/cert.pem')
 }, app).listen(1116, function() {
   console.log('Express HTTPS server listening on port: 1116');
 });
