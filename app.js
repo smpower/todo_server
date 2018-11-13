@@ -4,6 +4,8 @@
 
 var express = require('express');
 var http = require('http');
+var https = require('https');
+var fs = require('fs');
 var bodyParser = require('body-parser');
 var mysql = require('mysql');
 
@@ -116,5 +118,17 @@ app.post('/todo/login', function(req, res, next) {
 });
 
 http.createServer(app).listen(app.get('port'), function() {
-  console.log('Express server listening on port: ' + app.get('port'));
+  console.log('Express HTTP server listening on port: ' + app.get('port'));
+});
+
+https.createServer({
+  key: fs.readFileSync('./certificate/privatekey.pem'),
+  cert: fs.readFileSync('./certificate/certificate.pem')
+}, app).listen(1116, function() {
+  console.log('Express HTTPS server listening on port: 1116');
+});
+
+app.get('/', function (req, res) {
+  res.header('Content-type', 'text/html');
+  return res.end('<h1>Hello, Secure World!</h1>');
 });
