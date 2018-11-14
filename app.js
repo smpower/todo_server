@@ -115,7 +115,6 @@ app.post('/todo/login', function(req, res, next) {
 
   connection.query(selectSql, selectSqlParams, function(error, results, fields) {
     if (error) throw error;
-    console.log(results);
     if (results.length === 1) res.json({isLogined: true});
     else res.json({isLogined: false});
   });
@@ -137,15 +136,3 @@ app.get('/', function (req, res) {
     res.send('Welcome to safety land!');
   } else res.send('Welcome to land.');
 });
-
-// https.createServer({
-//   key: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.key'),
-//   cert: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.crt')
-// }, app).listen(1116, function() {
-//   console.log('Express HTTPS server listening on port: 1116');
-// });
-// 
-// app.get('/', function (req, res) {
-//   res.header('Content-type', 'text/html');
-//   return res.end('<h1>Hello, Secure World!</h1>');
-// });
