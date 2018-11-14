@@ -8,6 +8,7 @@ var https = require('https');
 var fs = require('fs');
 var bodyParser = require('body-parser');
 var mysql = require('mysql');
+var crypto = require('crypto');
 
 
 var app = express();
@@ -17,6 +18,24 @@ var connection = mysql.createConnection({
   password: 'rf.wangchn',
   database: 'todo'
 });
+var hash = crypto.createHash('sha512');
+
+// 创建加密算法
+const aseEncode = function(data, password) {
+  // 如下方法使用指定的算法与密码来创建cipher对象
+  const cipher = crypto.createCipher('aes192', password);
+
+  // 使用该对象的update方法来指定需要被加密的数据
+  let crypted = cipher.update(data, 'utf-8', 'hex');
+
+  crypted += cipher.final('hex');
+
+  return crypted;
+};
+
+// 创建解密算法
+var aseDecode = function(data, password) {
+};
 
 // all environments
 app.set('port', 1115);
@@ -69,10 +88,9 @@ app.post('/todo/test/post', function(req, res, next) {
 });
 
 app.post('/todo/regist', function(req, res, next) {
-  console.log('regist...');
-  console.log(req.body);
+  const crypwd = aseEncode(req.body.password, req.body.email);
   const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, ?)`;
-  const addSqlParams = [req.body.username, req.body.email, req.body.password];
+  const addSqlParams = [req.body.username, req.body.email, crypwd];
 
   var connection = mysql.createConnection({
     host     : 'localhost',
@@ -86,7 +104,6 @@ app.post('/todo/regist', function(req, res, next) {
   // connection.query('INSERT INTO user(username, email, password) VALUES(?, ? ,?)', [req.body.username, req.body.email, req.body.password],
   connection.query(addSql, addSqlParams, function(error, results, fields) {
     if (error) throw error;
-    console.log(results);
     if (results.affectedRows === 1) res.json({isRegisted: true});
     else res.json({isRegisted: false});
   });
@@ -101,8 +118,12 @@ app.post('/todo/regist', function(req, res, next) {
 });
 
 app.post('/todo/login', function(req, res, next) {
+  const {email, password} = req.body;
+  const crypwd = aseEncode(password, email);
+  const cryemail = aseEncode(email, crypwd);
+
   const selectSql = `SELECT * FROM user WHERE email = ? AND password = ?`;
-  const selectSqlParams = [req.body.email, req.body.password];
+  const selectSqlParams = [email, crypwd];
 
   const connection = mysql.createConnection({
     host: 'localhost',
@@ -115,7 +136,7 @@ app.post('/todo/login', function(req, res, next) {
 
   connection.query(selectSql, selectSqlParams, function(error, results, fields) {
     if (error) throw error;
-    if (results.length === 1) res.json({isLogined: true});
+    if (results.length === 1) res.json({isLogined: true, cryemail, crypwd});
     else res.json({isLogined: false});
   });
 });
