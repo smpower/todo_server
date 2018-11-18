@@ -87,6 +87,7 @@ app.post('/todo/test/post', function(req, res, next) {
   });
 });
 
+// 用户注册
 app.post('/todo/regist', function(req, res, next) {
   const crypwd = aseEncode(req.body.password, req.body.email);
   const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, ?)`;
@@ -117,6 +118,7 @@ app.post('/todo/regist', function(req, res, next) {
   connection.end();
 });
 
+// 用户登录
 app.post('/todo/login', function(req, res, next) {
   const {email, password} = req.body;
   const crypwd = aseEncode(password, email);
@@ -136,15 +138,53 @@ app.post('/todo/login', function(req, res, next) {
 
   connection.query(selectSql, selectSqlParams, function(error, results, fields) {
     if (error) throw error;
-    if (results.length === 1) res.json({isLogined: true, cryemail, crypwd});
-    else res.json({isLogined: false});
+
+    if (results.length === 1) {
+      const username = results[0].username;
+      res.json({isLogined: true, username, cryemail, crypwd});
+    } else res.json({isLogined: false});
   });
 });
 
+// 检查用户名是否已存在
+app.post('/todo/isUsernameExisted', function(req, res, next) {
+  console.log(req.body);
+  const {username} = req.body;
+  const selectSql = `SELECT * FROM user WHERE username = ?`;
+  const selectSqlParams = [username];
+
+  const connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'ruofei',
+    password: 'rf.wangchn',
+    database: 'todo'
+  });
+
+  connection.connect();
+
+  connection.query(selectSql, selectSqlParams, function(error, results, fields) {
+    if (error) throw error;
+
+    if (results.length === 0) {  // 该用户名不存在
+      console.log('该用户应不存在');
+      res.json({isUsernameExisted: false});
+      return;
+    }
+
+    if (results.length === 1) {  // 该用户名已存在
+      console.log('该用户名已存在');
+      res.json({isUsernameExisted: true});
+      return;
+    }
+  });
+});
+
+// 创建 HTTP 服务器
 http.createServer(app).listen(app.get('port'), function() {
   console.log('Express HTTP server listening on port: ' + app.get('port'));
 });
 
+// 创建 HTTPS 服务器
 https.createServer({
   key: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.key'),
   cert: fs.readFileSync('./certificate/cert-1542088285878_wundertodo.xyz.crt')
