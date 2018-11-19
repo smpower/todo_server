@@ -169,11 +169,40 @@ app.post('/todo/isUsernameExisted', function(req, res, next) {
       console.log('该用户应不存在');
       res.json({isUsernameExisted: false});
       return;
-    }
-
-    if (results.length === 1) {  // 该用户名已存在
+    } else {  // 该用户名已存在
       console.log('该用户名已存在');
       res.json({isUsernameExisted: true});
+      return;
+    }
+  });
+});
+
+// 检查用户邮箱是否已存在
+app.post('/todo/isEmailExisted', function(req, res, next) {
+  console.log(req.body);
+  const {email} = req.body;
+  const selectSql = `SELECT * FROM user WHERE email = ?`;
+  const selectSqlParams = [email];
+
+  const connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'ruofei',
+    password: 'rf.wangchn',
+    database: 'todo'
+  });
+
+  connection.connect();
+
+  connection.query(selectSql, selectSqlParams, function(error, results, fields) {
+    if (error) throw error;
+
+    if (results.length === 0) {  // 该邮箱不存在
+      console.log('该邮箱不存在');
+      res.json({isEmailExisted: false});
+      return;
+    } else {  // 该邮箱已被注册
+      console.log('该邮箱已被注册');
+      res.json({isEmailExisted: true});
       return;
     }
   });
