@@ -12,12 +12,16 @@ var mysql = require('mysql');
 
 
 var app = express();
-var connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'ruofei',
+
+var mysqlConnection = {
+  host: '172.17.0.1',
+  port: '3306',
+  user: 'root',
   password: 'rf.wangchn',
-  database: 'todo'
-});
+  database: 'todo',
+};
+
+var connection = mysql.createConnection(mysqlConnection);
 // var hash = crypto.createHash('sha512');
 
 // 创建加密算法
@@ -94,12 +98,7 @@ app.post('/todo/regist', function(req, res, next) {
   // const addSqlParams = [req.body.username, req.body.email, crypwd];
   const addSqlParams = [req.body.username, req.body.email, req.body.password];
 
-  var connection = mysql.createConnection({
-    host     : 'localhost',
-    user     : 'ruofei',
-    password : 'rf.wangchn',
-    database : 'todo'
-  });
+  var connection = mysql.createConnection(mysqlConnection);
 
   connection.connect();
 
@@ -129,12 +128,7 @@ app.post('/todo/login', function(req, res, next) {
   // const selectSqlParams = [email, crypwd];
   const selectSqlParams = [email, password];
 
-  const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'ruofei',
-    password: 'rf.wangchn',
-    database: 'todo'
-  });
+  const connection = mysql.createConnection(mysqlConnection);
 
   connection.connect();
 
@@ -156,12 +150,7 @@ app.post('/todo/isUsernameExisted', function(req, res, next) {
   const selectSql = `SELECT * FROM user WHERE username = ?`;
   const selectSqlParams = [username];
 
-  const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'ruofei',
-    password: 'rf.wangchn',
-    database: 'todo'
-  });
+  const connection = mysql.createConnection(mysqlConnection);
 
   connection.connect();
 
@@ -187,12 +176,7 @@ app.post('/todo/isEmailExisted', function(req, res, next) {
   const selectSql = `SELECT * FROM user WHERE email = ?`;
   const selectSqlParams = [email];
 
-  const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'ruofei',
-    password: 'rf.wangchn',
-    database: 'todo'
-  });
+  const connection = mysql.createConnection(mysqlConnection);
 
   connection.connect();
 
