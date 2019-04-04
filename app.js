@@ -8,8 +8,8 @@ var https = require('https');
 var fs = require('fs');
 var bodyParser = require('body-parser');
 var mysql = require('mysql');
+var { createToken, decodeToken, checkToken } = require('./token');
 // var crypto = require('crypto');
-
 
 var app = express();
 
@@ -136,10 +136,17 @@ app.post('/todo/login', function(req, res, next) {
     if (error) throw error;
 
     if (results.length === 1) {
-      const username = results[0].username;
-      // res.json({isLogined: true, username, cryemail, crypwd});
-      res.json({isLogined: true, username, password, password});
-    } else res.json({isLogined: false});
+      const { uid, username } = results[0];
+      res.json({
+        status: 0,
+	message: '登录成功',
+	uid: uid,
+	token: createToken({email, password, username})
+      });
+    } else res.json({
+      status: 1,
+      message: '用户名或密码错误',
+    });
   });
 });
 
