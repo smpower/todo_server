@@ -9,6 +9,7 @@ var fs = require('fs');
 var bodyParser = require('body-parser');
 var mysql = require('mysql');
 var { createToken, decodeToken, checkToken } = require('./token');
+var api = require('./api');
 // var crypto = require('crypto');
 
 var app = express();
