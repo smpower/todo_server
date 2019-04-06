@@ -52,7 +52,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.all('*', function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Method', 'PUT,POST,GET,DELETE,PATCH,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Credentials', true);
   res.header('Content-Type', 'application/json;charset=UTF-8');
   next();
@@ -200,6 +200,42 @@ app.post('/todo/isEmailExisted', function(req, res, next) {
       res.json({isEmailExisted: true});
       return;
     }
+  });
+});
+
+// 获取 todo 数据
+app.post('/todo/getData', function(req, res, next) {
+  res.json({
+    status: 0,
+    message: '成功获取 todo 数据',
+    data: [
+      {
+        box: 'inbox',
+	dataList: [
+	  {
+	    id: 1,
+	    text: 'This is a test todo item.'
+	  },
+	  {
+	    id: 2,
+	    text: 'This is another todo item.'
+	  }
+	]
+      },
+      {
+        box: 'my inbox',
+	dataList: [
+	  {
+	    id: 3,
+	    text: 'This is my-inbox todo item.'
+	  },
+	  {
+	    id: 4,
+	    text: 'This is another my-inbox todo item.'
+	  }
+	]
+      }
+    ]
   });
 });
 
