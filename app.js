@@ -227,11 +227,28 @@ app.post('/todo/getData', function(req, res, next) {
 	dataList: [
 	  {
 	    id: 3,
-	    text: 'This is my-inbox todo item.'
+	    text: 'This is my-inbox todo item.',
+	    completed: false
 	  },
 	  {
 	    id: 4,
-	    text: 'This is another my-inbox todo item.'
+	    text: 'This is another my-inbox todo item.',
+	    completed: false
+	  }
+	]
+      },
+      {
+	box: 'home work',
+	dataList: [
+	  {
+	    id: 5,
+	    text: '完成家庭作业',
+	    completed: false
+	  },
+	  {
+	    id: 6,
+	    text: '做数学题',
+	    completed: false
 	  }
 	]
       }
