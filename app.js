@@ -302,6 +302,24 @@ app.post('/todo/getData', function(req, res, next) {
   });
 });
 
+// 切换 todo 完成状态
+app.post('/todo/toggleTodoChecked', function(req, res, next) {
+  res.json({
+    status: 0,
+    message: '成功',
+    username: 'user.name'
+  });
+});
+
+// 添加 todo
+app.post('/todo/addTodo', function(req, res, next) {
+  res.json({
+    status: 0,
+    message: '添加成功',
+    taskId: 15
+  });
+});
+
 // 创建 HTTP 服务器
 http.createServer(app).listen(app.get('port'), function() {
   console.log('Express HTTP server listening on port: ' + app.get('port'));
