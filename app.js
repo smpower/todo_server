@@ -323,6 +323,16 @@ app.post('/todo/addTodo', function(req, res, next) {
   });
 });
 
+// 删除 todo
+app.post('/todo/deleteTodo', function(req, res, next) {
+  // @TODO 这里的删除 todo 仅仅是将被选中的 todo 标记为已删除，后期开发[回收站]
+  //       功能时还要用到这些被标记的 todo 数据
+  res.json({
+    status: 0,
+    message: '删除成功'
+  });
+});
+
 // 创建 HTTP 服务器
 http.createServer(app).listen(app.get('port'), function() {
   console.log('Express HTTP server listening on port: ' + app.get('port'));
