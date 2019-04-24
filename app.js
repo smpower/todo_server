@@ -333,6 +333,15 @@ app.post('/todo/deleteTodo', function(req, res, next) {
   });
 });
 
+// 创建任务列表
+app.post('/todo/createList', function(req, res, next) {
+  // @TODO uid, createdList, token
+  res.json({
+    status: 0,
+    message: '创建成功'
+  });
+});
+
 // 创建 HTTP 服务器
 http.createServer(app).listen(app.get('port'), function() {
   console.log('Express HTTP server listening on port: ' + app.get('port'));
