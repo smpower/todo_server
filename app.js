@@ -132,6 +132,15 @@ app.post('/todo/regist', function(req, res, next) {
 	  `;
 	  connection.query(createListsTableSql, function(error, results, fields) {
 	    if (error) throw error;
+
+	    // @TODO 新建 inbox 任务列表
+	    const insertInboxSql = `
+	      INSERT INTO ${listsTableName} (list_name)
+	      VALUES ('Inbox')
+	    `;
+	    connection.query(insertInboxSql, function(error, results, fields) {
+	      if (error) throw error;
+	    });
 	  });
 	});
 
