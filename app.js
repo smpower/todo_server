@@ -338,7 +338,12 @@ app.post('/todo/createList', function(req, res, next) {
   // @TODO uid, createdList, token
   res.json({
     status: 0,
-    message: '创建成功'
+    message: '创建成功',
+    data: {
+      id: 33,
+      box: 'created list',
+      dataList: []
+    }
   });
 });
 
