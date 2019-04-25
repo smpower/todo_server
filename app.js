@@ -106,8 +106,7 @@ app.post('/todo/regist', function(req, res, next) {
     if (results.affectedRows === 1) {
       res.json({isRegisted: true});
 
-      // @TODO 用户注册成功后，创建用户的任务表
-      // 1. 创建用户唯一任务表
+      // 用户注册成功后，创建用户的任务表
       const searchUidSql = `SELECT uid FROM user WHERE username = ${req.body.username}`;
       mysql.createConnection(mysqlConnection).query(searchUidSql, function(error, results, fields) {
         if (error) throw error;
@@ -119,14 +118,41 @@ app.post('/todo/regist', function(req, res, next) {
 	const updateTaskseSql = `UPDATE user SET tasks = '${tasksTableName}' WHERE uid = ${uid}`;
 	const updateListsSql = `UPDATE user SET lists = '${listsTableName}' WHERE uid = ${uid}`;
 
-	connection.query(updateTaskseSql, function(error, results, fields) {
-	  if (error) throw error;
-	  console.log(results);
-	});
-
+	// 更新 user 表中 lists 字段
 	connection.query(updateListsSql, function(error, results, fields) {
 	  if (error) throw error;
-	  console.log(results);
+
+	  // 创建 lists 表
+	  const createListsTableSql = `CREATE TABLE ${listsTableName} 
+	    (
+	      list_id int(4) NOT NULL AUTO_INCREMENT COMMENT '任务列表 id', 
+	      list_name varchar(255) NOT NULL COMMENT '任务列表名',
+	      PRIMARY KEY (list_id)
+	    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
+	  `;
+	  connection.query(createListsTableSql, function(error, results, fields) {
+	    if (error) throw error;
+	  });
+	});
+
+	// 更新 user 表中 tasks 字段
+	connection.query(updateTaskseSql, function(error, results, fields) {
+	  if (error) throw error;
+
+	  // 创建 tasks 表
+	  const createTasksTableSql = `CREATE TABLE ${tasksTableName} 
+	    (
+	      task_id int(4) NOT NULL AUTO_INCREMENT COMMENT '任务 id',
+	      list_id int(4) NOT NULL COMMENT '任务列表 id',
+	      text varchar(255) NOT NULL COMMENT '任务内容',
+	      completed tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '是否已完成：0 - 未完成 | 1 - 已完成',
+	      deleted tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '是否已删除：0 - 未删除 | 1 - 已删除',
+	      PRIMARY KEY (task_id)
+	    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
+	  `;
+	  connection.query(createTasksTableSql, function(error, results, fields) {
+	    if (error) throw error;
+	  });
 	});
       });
     }
@@ -171,6 +197,11 @@ app.post('/todo/isUsernameExisted', function(req, res, next) {
   const {username} = req.body;
   const selectSql = `SELECT * FROM user WHERE username = ?`;
   const selectSqlParams = [username];
+
+  if (req.body.username.trim() === 'test') {
+    res.json({isUsernameExisted: true});
+    return;
+  }
 
   const connection = mysql.createConnection(mysqlConnection);
 
@@ -229,51 +260,75 @@ app.post('/todo/getData', function(req, res, next) {
 	dataList: [
 	  {
 	    id: 1,
-	    text: 'This is a test todo item.'
+	    text: 'This is a test todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 2,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 12,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 13,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 14,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 15,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 16,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 17,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 18,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 19,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 20,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 21,
-	    text: 'This is another todo item.'
+	    text: 'This is another todo item.',
+	    completed: false,
+	    deleted: false
 	  }
 	]
       },
@@ -284,12 +339,14 @@ app.post('/todo/getData', function(req, res, next) {
 	  {
 	    id: 3,
 	    text: 'This is my-inbox todo item.',
-	    completed: false
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 4,
 	    text: 'This is another my-inbox todo item.',
-	    completed: false
+	    completed: false,
+	    deleted: false
 	  }
 	]
       },
@@ -300,17 +357,20 @@ app.post('/todo/getData', function(req, res, next) {
 	  {
 	    id: 5,
 	    text: '完成家庭作业',
-	    completed: false
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 6,
 	    text: '做数学题',
-	    completed: false
+	    completed: false,
+	    deleted: false
 	  },
 	  {
 	    id: 7,
 	    text: '做语文题',
-	    completed: false
+	    completed: false,
+	    deleted: false
 	  }
 	]
       }
