@@ -23,6 +23,7 @@ var mysqlConnection = {
 };
 
 var connection = mysql.createConnection(mysqlConnection);
+connection.connect();
 // var hash = crypto.createHash('sha512');
 
 // 创建加密算法
@@ -96,27 +97,41 @@ app.post('/todo/test/post', function(req, res, next) {
 app.post('/todo/regist', function(req, res, next) {
   // const crypwd = aseEncode(req.body.password, req.body.email);
   const addSql = `INSERT INTO user(username, email, password) VALUES(?, ?, ?)`;
-  // const addSqlParams = [req.body.username, req.body.email, crypwd];
   const addSqlParams = [req.body.username, req.body.email, req.body.password];
+  const connection = mysql.createConnection(mysqlConnection);
 
-  var connection = mysql.createConnection(mysqlConnection);
-
-  connection.connect();
-
-  // connection.query('INSERT INTO user(username, email, password) VALUES(?, ? ,?)', [req.body.username, req.body.email, req.body.password],
   connection.query(addSql, addSqlParams, function(error, results, fields) {
     if (error) throw error;
-    if (results.affectedRows === 1) res.json({isRegisted: true});
+
+    if (results.affectedRows === 1) {
+      res.json({isRegisted: true});
+
+      // @TODO 用户注册成功后，创建用户的任务表
+      // 1. 创建用户唯一任务表
+      const searchUidSql = `SELECT uid FROM user WHERE username = ${req.body.username}`;
+      mysql.createConnection(mysqlConnection).query(searchUidSql, function(error, results, fields) {
+        if (error) throw error;
+
+	const uid = results[0].uid
+	const tasksTableName = `${uid}_tasks_${Date.now().toString(36).substr(3)}`;
+	const listsTableName = `${uid}_lists_${Date.now().toString(36).substr(3)}`;
+
+	const updateTaskseSql = `UPDATE user SET tasks = '${tasksTableName}' WHERE uid = ${uid}`;
+	const updateListsSql = `UPDATE user SET lists = '${listsTableName}' WHERE uid = ${uid}`;
+
+	connection.query(updateTaskseSql, function(error, results, fields) {
+	  if (error) throw error;
+	  console.log(results);
+	});
+
+	connection.query(updateListsSql, function(error, results, fields) {
+	  if (error) throw error;
+	  console.log(results);
+	});
+      });
+    }
     else res.json({isRegisted: false});
   });
-
-  // connection.query('SELECT * FROM user', function (error, results, fields) {
-  //   if (error) throw error;
-  //   console.log(results);
-  //   res.json(results);
-  // });
-
-  connection.end();
 });
 
 // 用户登录
@@ -153,7 +168,6 @@ app.post('/todo/login', function(req, res, next) {
 
 // 检查用户名是否已存在
 app.post('/todo/isUsernameExisted', function(req, res, next) {
-  console.log(req.body);
   const {username} = req.body;
   const selectSql = `SELECT * FROM user WHERE username = ?`;
   const selectSqlParams = [username];
@@ -179,7 +193,6 @@ app.post('/todo/isUsernameExisted', function(req, res, next) {
 
 // 检查用户邮箱是否已存在
 app.post('/todo/isEmailExisted', function(req, res, next) {
-  console.log(req.body);
   const {email} = req.body;
   const selectSql = `SELECT * FROM user WHERE email = ?`;
   const selectSqlParams = [email];
