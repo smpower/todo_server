@@ -107,8 +107,9 @@ app.post('/todo/regist', function(req, res, next) {
       res.json({isRegisted: true});
 
       // 用户注册成功后，创建用户的任务表
-      const searchUidSql = `SELECT uid FROM user WHERE username = ${req.body.username}`;
-      mysql.createConnection(mysqlConnection).query(searchUidSql, function(error, results, fields) {
+      const searchUidSql = `SELECT uid FROM user WHERE username = ?`;
+      const searchUidParams = [req.body.username];
+      connection.query(searchUidSql, searchUidParams, function(error, results, fields) {
         if (error) throw error;
 
 	const uid = results[0].uid
