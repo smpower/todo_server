@@ -14,6 +14,10 @@ var api = require('./api');
 
 var app = express();
 
+const userinfo = {
+  uid: 0
+};
+
 var mysqlConnection = {
   host: '172.17.0.1',
   port: '3306',
@@ -128,6 +132,7 @@ app.post('/todo/regist', function(req, res, next) {
 	    (
 	      list_id int(4) NOT NULL AUTO_INCREMENT COMMENT '任务列表 id', 
 	      list_name varchar(255) NOT NULL COMMENT '任务列表名',
+	      owner_list int(4) NOT NULL AUTO_INCREMENT COMMENT '所属 list',
 	      PRIMARY KEY (list_id)
 	    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 	  `;
@@ -157,6 +162,7 @@ app.post('/todo/regist', function(req, res, next) {
 	      text varchar(255) NOT NULL COMMENT '任务内容',
 	      completed tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '是否已完成：0 - 未完成 | 1 - 已完成',
 	      deleted tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '是否已删除：0 - 未删除 | 1 - 已删除',
+	      owner_list int(4) NOT NULL COMMENT '所属 list',
 	      PRIMARY KEY (task_id)
 	    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 	  `;
@@ -173,22 +179,15 @@ app.post('/todo/regist', function(req, res, next) {
 // 用户登录
 app.post('/todo/login', function(req, res, next) {
   const {email, password} = req.body;
-  // const crypwd = aseEncode(password, email);
-  // const cryemail = aseEncode(email, crypwd);
-
   const selectSql = `SELECT * FROM user WHERE email = ? AND password = ?`;
-  // const selectSqlParams = [email, crypwd];
   const selectSqlParams = [email, password];
-
-  const connection = mysql.createConnection(mysqlConnection);
-
-  connection.connect();
 
   connection.query(selectSql, selectSqlParams, function(error, results, fields) {
     if (error) throw error;
 
     if (results.length === 1) {
       const { uid, username } = results[0];
+
       res.json({
         status: 0,
 	message: '登录成功',
@@ -259,6 +258,92 @@ app.post('/todo/isEmailExisted', function(req, res, next) {
 
 // 获取 todo 数据
 app.post('/todo/getData', function(req, res, next) {
+  const Authorization = req.get('Authorization');
+  const { uid } = req.body;
+  const { email, username } = decodeToken(Authorization);
+  let listsData = [];
+  let listData = {};
+  let listIdArr = [];
+
+  // 验证当前登录用户
+  const verificationSql = `
+    SELECT uid FROM user WHERE username = ? AND email = ?
+  `;
+  const verificationParams = [username, email];
+  connection.query(verificationSql, verificationParams, function(error, results, fields) {
+    if (error) throw error;
+
+    if (results[0].uid === uid) {
+      // 通过 lists 字段和 tasks 字段的值到对应的表中检索
+      const searchSql = `SELECT lists, tasks FROM user WHERE uid = ?`;
+      const searchParams = [uid];
+      connection.query(searchSql, searchParams, function(error, results, fields) {
+	if (error) throw error;
+	const { lists, tasks } = results[0];
+	// let listsData = [];
+	// let listData = {};
+	// let listIdArr = [];
+
+	// 联结查询：检索任务列表和任务项
+	const searchListsSql = `
+	  SELECT ${lists}.list_id, ${lists}.list_name, task_id, text, completed, deleted 
+	  FROM ${lists}, ${tasks}
+	  WHERE ${lists}.owner_list = ${tasks}.owner_list
+	`;
+	connection.query(searchListsSql, function(error, results, fields) {
+	  if (error) throw error;
+
+	  results.forEach((taskItem, taskIndex) => {
+	    listIdArr.push(taskItem.list_id);
+	  });
+
+	  const uniqueListIds = Array.from(new Set(listIdArr));
+	  const data = uniqueListIds.map((uniqueListIdItem, uniqueListIdIndex) => {
+	    const tmp = {};
+
+	    let dataList = results.filter((taskItem, taskIndex) => {
+	      if (uniqueListIdItem === taskItem.list_id) {
+		tmp.id = taskItem.list_id;
+		tmp.box = taskItem.list_name;
+	      }
+	      return uniqueListIdItem === taskItem.list_id;
+	    });
+
+	    // 处理返回到前台的数据
+	    dataList.forEach((dataListItem, dataListIndex) => {
+	      delete dataListItem.list_id;
+	      delete dataListItem.list_name;
+
+	      dataListItem.id = dataListItem.task_id;
+	      delete dataListItem.task_id;
+
+	      dataListItem.completed === '0' ?
+		dataListItem.completed = false :
+		dataListItem.completed = true;
+
+	      dataListItem.deleted === '0' ?
+		dataListItem.deleted = false :
+		dataListItem.deleted = true;
+	    });
+
+	    return {
+	      ...tmp,
+	      dataList
+	    };
+	  });
+
+	  res.json({
+	    status: 0,
+	    message: 'success',
+	    username,
+	    data
+	  });
+	});
+      });
+    }
+  });
+
+  return;
   res.json({
     status: 0,
     message: '成功获取 todo 数据',
@@ -384,7 +469,8 @@ app.post('/todo/getData', function(req, res, next) {
 	  }
 	]
       }
-    ]
+    ],
+    data: []
   });
 });
 
