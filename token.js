@@ -3,15 +3,16 @@ const jwt = require('jwt-simple');
 module.exports.createToken = (options) => {
   const payload = {
     email: options.email,
-    password: options.username
+    username: options.username
   };
-  const secret = `super${options.password}`;
+  const secret = 'super';
 
   return jwt.encode(payload, secret);
 };
 
-module.exports.decodeToken = () => {
-  console.log('decode token');
+module.exports.decodeToken = (token) => {
+  const secret = 'super';
+  return jwt.decode(token, secret);
 };
 
 module.exports.checkToken = () => {
