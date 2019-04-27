@@ -280,6 +280,56 @@ app.post('/todo/getData', function(req, res, next) {
       connection.query(searchSql, searchParams, function(error, results, fields) {
 	if (error) throw error;
 	const { lists, tasks } = results[0];
+	const data = [];
+
+	const searchListSql = `SELECT list_id, list_name FROM ${lists}`;
+	connection.query(searchListSql, function(error, results, fields) {
+	  if (error) throw error;
+	  if (results.length !== 0) {
+	    const listLength = results.length;
+	    results.forEach((listItem, listIndex) => {
+	      const searchTaskSql = `
+		SELECT list_id, task_id, text, completed, deleted
+		FROM ${tasks} WHERE list_id = ?`
+	      ;
+	      const searchTaskSqlParams = [listItem.list_id];
+	      connection.query(searchTaskSql, searchTaskSqlParams, function(error, results, fields) {
+		if (error) throw error;
+
+		results.forEach((taskItem, taskIndex) => {
+		  taskItem.id = taskItem.task_id;
+
+		  taskItem.completed === '0' ? 
+		    taskItem.completed = false :
+		    taskItem.completed = true;
+		  taskItem.deleted === '0' ? 
+		    taskItem.deleted = false :
+		    taskItem.deleted = true;
+
+		  delete taskItem.list_id;
+		  delete taskItem.task_id;
+		});
+
+		data.push({
+		  id: listItem.list_id,
+		  box: listItem.list_name,
+		  dataList: results
+		});
+
+		if (listLength === listIndex + 1) {
+		  res.json({
+		    status: 0,
+		    message: 'success',
+		    username,
+		    data
+		  });
+		}
+	      });
+	    });
+	  }
+	});
+
+	return;
 
 	// 联结查询：检索任务列表和任务项
 	const searchListsSql = `
@@ -404,6 +454,7 @@ app.post('/todo/addTodo', function(req, res, next) {
 	  res.json({
 	    status: 0,
 	    message: '添加成功',
+	    listId: list_id,
 	    taskId: results.insertId
 	  });
 	} else {
@@ -421,22 +472,83 @@ app.post('/todo/addTodo', function(req, res, next) {
 app.post('/todo/deleteTodo', function(req, res, next) {
   // @TODO 这里的删除 todo 仅仅是将被选中的 todo 标记为已删除，后期开发[回收站]
   //       功能时还要用到这些被标记的 todo 数据
-  res.json({
-    status: 0,
-    message: '删除成功'
+  const Authorization = req.get('Authorization');
+  const { uid, selectedTodos } = req.body;
+  const { email, username } = decodeToken(Authorization);
+
+  // 验证当前登录用户
+  const verificationSql = `
+    SELECT uid, tasks FROM user WHERE username = ? AND email = ?
+  `;
+  const verificationParams = [username, email];
+  connection.query(verificationSql, verificationParams, function(error, results, fields) {
+    if (error) throw error;
+
+    if (results[0].uid === uid) {
+      selectedTodos.forEach((selectedTodoItem, selectedTodoIndex) => {
+	const { listId, taskId } = selectedTodoItem;
+
+	// 删除一条 todo
+	const deleteTodoSql = `UPDATE ${results[0].tasks}
+	  SET deleted = '1' WHERE task_id = ?
+	`;
+	const deleteTodoSqlParams = [taskId];
+	connection.query(deleteTodoSql, deleteTodoSqlParams, function(error, results, fields) {
+	  if (error) throw error;
+
+	  if (results.affectedRows === 1) {
+	    res.json({
+	      status: 0,
+	      message: '删除成功'
+	    });
+	  }
+	});
+      });
+    }
   });
 });
 
 // 创建任务列表
 app.post('/todo/createList', function(req, res, next) {
-  // @TODO uid, createdList, token
-  res.json({
-    status: 0,
-    message: '创建成功',
-    data: {
-      id: 33,
-      box: 'created list',
-      dataList: []
+  const { uid, createdList } = req.body;
+  const { email, username } = decodeToken(req.get('Authorization'));
+
+  // 验证当前登录用户
+  const verificationSql = `
+    SELECT uid, lists FROM user WHERE username = ? AND email = ?
+  `;
+  const verificationParams = [username, email];
+  connection.query(verificationSql, verificationParams, function(error, results, fields) {
+    if (error) throw error;
+    const { lists } = results[0];
+
+    if (results[0].uid === uid) {
+      // 删除一条 todo
+      const createListSql = `INSERT INTO ${lists} (list_name) VALUES (?)`;
+      const createListSqlParams = [createdList];
+      connection.query(createListSql, createListSqlParams, function(error, results, fields) {
+	if (error) throw error;
+
+	if (results.affectedRows === 1) {
+	  const { insertId } = results;
+	  const updateListIdSql = `UPDATE ${lists} SET owner_list = ? WHERE list_id = ?`;
+	  const updateListIdSqlParams = [insertId, insertId];
+	  connection.query(updateListIdSql, updateListIdSqlParams, function(error, results, fields) {
+	    if (error) throw error;
+	    if (results.affectedRows === 1) {
+	      res.json({
+		status: 0,
+		message: '创建成功',
+		data: {
+		  id: insertId,
+		  box: createdList,
+		  dataList: []
+		}
+	      });
+	    }
+	  });
+	}
+      });
     }
   });
 });
