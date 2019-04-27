@@ -366,8 +366,6 @@ app.post('/todo/getData', function(req, res, next) {
       });
     }
   });
-
-  return;
 });
 
 // 切换 todo 完成状态
@@ -381,10 +379,41 @@ app.post('/todo/toggleTodoChecked', function(req, res, next) {
 
 // 添加 todo
 app.post('/todo/addTodo', function(req, res, next) {
-  res.json({
-    status: 0,
-    message: '添加成功',
-    taskId: 15
+  const Authorization = req.get('Authorization');
+  const { uid, list_id, text } = req.body;
+  const { email, username } = decodeToken(Authorization);
+
+  // 验证当前登录用户
+  const verificationSql = `
+    SELECT uid, tasks FROM user WHERE username = ? AND email = ?
+  `;
+  const verificationParams = [username, email];
+  connection.query(verificationSql, verificationParams, function(error, results, fields) {
+    if (error) throw error;
+
+    if (results[0].uid === uid) {
+      // 添加一条 todo
+      const addTodoSql = `INSERT INTO ${results[0].tasks} (
+        list_id, text, owner_list
+      ) VALUES (?, ?, ?)`;
+      const addTodoSqlParams = [list_id, text, list_id];
+      connection.query(addTodoSql, addTodoSqlParams, function(error, results, fields) {
+	if (error) throw error;
+
+	if (results.affectedRows === 1) {
+	  res.json({
+	    status: 0,
+	    message: '添加成功',
+	    taskId: results.insertId
+	  });
+	} else {
+	  res.json({
+	    status: 1,
+	    message: '添加失败'
+	  });
+	}
+      });
+    }
   });
 });
 
