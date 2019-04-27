@@ -305,7 +305,7 @@ app.post('/todo/getData', function(req, res, next) {
 		  tmp.box = taskItem.list_name;
 		}
 		return uniqueListIdItem === taskItem.list_id;
-	      });
+	      }).reverse();
 
 	      // 处理返回到前台的数据
 	      dataList.forEach((dataListItem, dataListIndex) => {
