@@ -280,9 +280,6 @@ app.post('/todo/getData', function(req, res, next) {
       connection.query(searchSql, searchParams, function(error, results, fields) {
 	if (error) throw error;
 	const { lists, tasks } = results[0];
-	// let listsData = [];
-	// let listData = {};
-	// let listIdArr = [];
 
 	// 联结查询：检索任务列表和任务项
 	const searchListsSql = `
@@ -293,185 +290,84 @@ app.post('/todo/getData', function(req, res, next) {
 	connection.query(searchListsSql, function(error, results, fields) {
 	  if (error) throw error;
 
-	  results.forEach((taskItem, taskIndex) => {
-	    listIdArr.push(taskItem.list_id);
-	  });
+	  if (results.length !== 0) {
+	    results.forEach((taskItem, taskIndex) => {
+	      listIdArr.push(taskItem.list_id);
+	    });
 
-	  const uniqueListIds = Array.from(new Set(listIdArr));
-	  const data = uniqueListIds.map((uniqueListIdItem, uniqueListIdIndex) => {
-	    const tmp = {};
+	    const uniqueListIds = Array.from(new Set(listIdArr));
+	    const data = uniqueListIds.map((uniqueListIdItem, uniqueListIdIndex) => {
+	      const tmp = {};
 
-	    let dataList = results.filter((taskItem, taskIndex) => {
-	      if (uniqueListIdItem === taskItem.list_id) {
-		tmp.id = taskItem.list_id;
-		tmp.box = taskItem.list_name;
+	      let dataList = results.filter((taskItem, taskIndex) => {
+		if (uniqueListIdItem === taskItem.list_id) {
+		  tmp.id = taskItem.list_id;
+		  tmp.box = taskItem.list_name;
+		}
+		return uniqueListIdItem === taskItem.list_id;
+	      });
+
+	      // 处理返回到前台的数据
+	      dataList.forEach((dataListItem, dataListIndex) => {
+		delete dataListItem.list_id;
+		delete dataListItem.list_name;
+
+		dataListItem.id = dataListItem.task_id;
+		delete dataListItem.task_id;
+
+		dataListItem.completed === '0' ?
+		  dataListItem.completed = false :
+		  dataListItem.completed = true;
+
+		dataListItem.deleted === '0' ?
+		  dataListItem.deleted = false :
+		  dataListItem.deleted = true;
+	      });
+
+	      return {
+		...tmp,
+		dataList
+	      };
+	    });
+
+	    res.json({
+	      status: 0,
+	      message: 'success',
+	      username,
+	      data
+	    });
+	  } else {
+	    connection.query(
+	      `SELECT ${lists}.list_id, ${lists}.list_name FROM ${lists}`,
+	      function (error, results, fields) {
+		if (error) throw error;
+
+		results.map((item, index) => {
+		  item.dataList = [];
+		  item.id = item.list_id;
+		  item.box = item.list_name;
+
+		  delete item.list_id;
+		  delete item.list_name;
+
+		  return item;
+		});
+
+		res.json({
+		  status: 0,
+		  message: 'success',
+		  username,
+		  data: results
+		});
 	      }
-	      return uniqueListIdItem === taskItem.list_id;
-	    });
-
-	    // 处理返回到前台的数据
-	    dataList.forEach((dataListItem, dataListIndex) => {
-	      delete dataListItem.list_id;
-	      delete dataListItem.list_name;
-
-	      dataListItem.id = dataListItem.task_id;
-	      delete dataListItem.task_id;
-
-	      dataListItem.completed === '0' ?
-		dataListItem.completed = false :
-		dataListItem.completed = true;
-
-	      dataListItem.deleted === '0' ?
-		dataListItem.deleted = false :
-		dataListItem.deleted = true;
-	    });
-
-	    return {
-	      ...tmp,
-	      dataList
-	    };
-	  });
-
-	  res.json({
-	    status: 0,
-	    message: 'success',
-	    username,
-	    data
-	  });
+	    );
+	  }
 	});
       });
     }
   });
 
   return;
-  res.json({
-    status: 0,
-    message: '成功获取 todo 数据',
-    username: 'user.name',
-    data: [
-      {
-        id: 1,
-        box: 'inbox',
-	dataList: [
-	  {
-	    id: 1,
-	    text: 'This is a test todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 2,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 12,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 13,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 14,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 15,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 16,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 17,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 18,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 19,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 20,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 21,
-	    text: 'This is another todo item.',
-	    completed: false,
-	    deleted: false
-	  }
-	]
-      },
-      {
-        id: 2,
-        box: 'my inbox',
-	dataList: [
-	  {
-	    id: 3,
-	    text: 'This is my-inbox todo item.',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 4,
-	    text: 'This is another my-inbox todo item.',
-	    completed: false,
-	    deleted: false
-	  }
-	]
-      },
-      {
-        id: 3,
-	box: 'home work',
-	dataList: [
-	  {
-	    id: 5,
-	    text: '完成家庭作业',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 6,
-	    text: '做数学题',
-	    completed: false,
-	    deleted: false
-	  },
-	  {
-	    id: 7,
-	    text: '做语文题',
-	    completed: false,
-	    deleted: false
-	  }
-	]
-      }
-    ],
-    data: []
-  });
 });
 
 // 切换 todo 完成状态
