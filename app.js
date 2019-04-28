@@ -296,7 +296,7 @@ app.post('/todo/getData', function(req, res, next) {
 	      connection.query(searchTaskSql, searchTaskSqlParams, function(error, results, fields) {
 		if (error) throw error;
 
-		results.forEach((taskItem, taskIndex) => {
+		results.reverse().forEach((taskItem, taskIndex) => {
 		  taskItem.id = taskItem.task_id;
 
 		  taskItem.completed === '0' ? 
@@ -420,10 +420,44 @@ app.post('/todo/getData', function(req, res, next) {
 
 // 切换 todo 完成状态
 app.post('/todo/toggleTodoChecked', function(req, res, next) {
-  res.json({
-    status: 0,
-    message: '成功',
-    username: 'user.name'
+  const { uid, selectedTodos } = req.body;
+  const { email, username } = decodeToken(req.get('Authorization'));
+
+  // 验证当前登录用户
+  const verificationSql = `
+    SELECT uid, tasks FROM user WHERE username = ? AND email = ?
+  `;
+  const verificationParams = [username, email];
+  connection.query(verificationSql, verificationParams, function(error, results, fields) {
+    if (error) throw error;
+
+    if (results[0].uid === uid) {
+      selectedTodos.forEach((selectedTodoItem, selectedTodoIndex) => {
+	const { listId, taskId } = selectedTodoItem;
+	let deleted = '';
+
+	// 删除一条 todo
+	if (selectedTodoItem.completed) deleted = '1';
+	else deleted = '0';
+
+	const toggleTodoSql = `UPDATE ${results[0].tasks}
+	  SET completed = ${deleted} WHERE task_id = ?
+	`;
+	const toggleTodoSqlParams = [taskId];
+	connection.query(toggleTodoSql, toggleTodoSqlParams, function(error, results, fields) {
+	  if (error) throw error;
+
+	  if (results.affectedRows === 1) {
+	    res.json({
+	      status: 0,
+	      message: '删除成功',
+	      affedtedListId: listId,
+	      affedtedTaskId: taskId
+	    });
+	  }
+	});
+      });
+    }
   });
 });
 
