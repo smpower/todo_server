@@ -132,7 +132,7 @@ app.post('/todo/regist', function(req, res, next) {
 	    (
 	      list_id int(4) NOT NULL AUTO_INCREMENT COMMENT '任务列表 id', 
 	      list_name varchar(255) NOT NULL COMMENT '任务列表名',
-	      owner_list int(4) NOT NULL AUTO_INCREMENT COMMENT '所属 list',
+	      owner_list int(4) NOT NULL COMMENT '所属 list',
 	      PRIMARY KEY (list_id)
 	    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 	  `;
@@ -142,10 +142,23 @@ app.post('/todo/regist', function(req, res, next) {
 	    // @TODO 新建 inbox 任务列表
 	    const insertInboxSql = `
 	      INSERT INTO ${listsTableName} (list_name)
-	      VALUES ('Inbox')
+	      VALUES ('inbox')
 	    `;
 	    connection.query(insertInboxSql, function(error, results, fields) {
 	      if (error) throw error;
+
+	      if (results.affectedRows === 1) {
+		const updateOwnerListSql = `
+		  UPDATE ${listsTableName}
+		  SET owner_list = ${results.insertId}
+		`;
+		connection.query(updateOwnerListSql, function(error, results, fields) {
+		  if (error) throw error;
+		  if (results.affectedRows === 1) {
+		    console.log('更新 owner_list 成功！');
+		  }
+		});
+	      }
 	    });
 	  });
 	});
