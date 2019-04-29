@@ -132,7 +132,7 @@ app.post('/todo/regist', function(req, res, next) {
 	    (
 	      list_id int(4) NOT NULL AUTO_INCREMENT COMMENT '任务列表 id', 
 	      list_name varchar(255) NOT NULL COMMENT '任务列表名',
-	      owner_list int(4) NOT NULL COMMENT '所属 list',
+	      owner_list int(4) NULL COMMENT '所属 list',
 	      PRIMARY KEY (list_id)
 	    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 	  `;
@@ -175,7 +175,7 @@ app.post('/todo/regist', function(req, res, next) {
 	      text varchar(255) NOT NULL COMMENT '任务内容',
 	      completed tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '是否已完成：0 - 未完成 | 1 - 已完成',
 	      deleted tinyint(1) unsigned zerofill NOT NULL DEFAULT '0' COMMENT '是否已删除：0 - 未删除 | 1 - 已删除',
-	      owner_list int(4) NOT NULL COMMENT '所属 list',
+	      owner_list int(4) NULL COMMENT '所属 list',
 	      PRIMARY KEY (task_id)
 	    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 	  `;
