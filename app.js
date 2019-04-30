@@ -1,7 +1,3 @@
-/**
- * Module dependencies
- */
-
 var express = require('express');
 var http = require('http');
 var https = require('https');
@@ -10,7 +6,6 @@ var bodyParser = require('body-parser');
 var mysql = require('mysql');
 var { createToken, decodeToken, checkToken } = require('./token');
 var api = require('./api');
-// var crypto = require('crypto');
 
 var app = express();
 
@@ -26,28 +21,24 @@ var mysqlConnection = {
   database: 'todo',
 };
 
-var connection = mysql.createConnection(mysqlConnection);
-connection.connect();
-// var hash = crypto.createHash('sha512');
+var mysqlPool = mysql.createPool(mysqlConnection);
 
-// 创建加密算法
-// const aseEncode = function(data, password) {
-//   // 如下方法使用指定的算法与密码来创建cipher对象
-//   const cipher = crypto.createCipher('aes192', password);
-// 
-//   // 使用该对象的update方法来指定需要被加密的数据
-//   let crypted = cipher.update(data, 'utf-8', 'hex');
-// 
-//   crypted += cipher.final('hex');
-// 
-//   return crypted;
-// };
+var mysqlQuery = function(params) {
+  mysqlPool.getConnection(function(error, connection) {
+    if (typeof params.sqlParams === 'undefined') {
+      connection.query(params.sql, function(error, results, fields) {
+	params.callback(error, results, fields);
+	connection.release();
+      });
+    } else {
+      connection.query(params.sql, params.sqlParams, function(error, results, fields) {
+        params.callback(error, results, fields);
+	connection.release();
+      });
+    }
+  });
+}
 
-// 创建解密算法
-// var aseDecode = function(data, password) {
-// };
-
-// all environments
 app.set('port', 1115);
 
 app.use(bodyParser.json());
@@ -195,22 +186,26 @@ app.post('/todo/login', function(req, res, next) {
   const selectSql = `SELECT * FROM user WHERE email = ? AND password = ?`;
   const selectSqlParams = [email, password];
 
-  connection.query(selectSql, selectSqlParams, function(error, results, fields) {
-    if (error) throw error;
+  mysqlQuery({
+    sql: selectSql,
+    sqlParams: selectSqlParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
 
-    if (results.length === 1) {
-      const { uid, username } = results[0];
+      if (results.length === 1) {
+	const { uid, username } = results[0];
 
-      res.json({
-        status: 0,
-	message: '登录成功',
-	uid: uid,
-	token: createToken({email, password, username})
+	res.json({
+	  status: 0,
+	  message: '登录成功',
+	  uid: uid,
+	  token: createToken({email, password, username})
+	});
+      } else res.json({
+	status: 1,
+	message: '用户名或密码错误',
       });
-    } else res.json({
-      status: 1,
-      message: '用户名或密码错误',
-    });
+    }
   });
 });
 
@@ -227,19 +222,21 @@ app.post('/todo/isUsernameExisted', function(req, res, next) {
 
   const connection = mysql.createConnection(mysqlConnection);
 
-  connection.connect();
+  mysqlQuery({
+    sql: selectSql,
+    sqlParams: selectSqlParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
 
-  connection.query(selectSql, selectSqlParams, function(error, results, fields) {
-    if (error) throw error;
-
-    if (results.length === 0) {  // 该用户名不存在
-      console.log('该用户应不存在');
-      res.json({isUsernameExisted: false});
-      return;
-    } else {  // 该用户名已存在
-      console.log('该用户名已存在');
-      res.json({isUsernameExisted: true});
-      return;
+      if (results.length === 0) {  // 该用户名不存在
+	console.log('该用户应不存在');
+	res.json({isUsernameExisted: false});
+	return;
+      } else {  // 该用户名已存在
+	console.log('该用户名已存在');
+	res.json({isUsernameExisted: true});
+	return;
+      }
     }
   });
 });
@@ -252,19 +249,21 @@ app.post('/todo/isEmailExisted', function(req, res, next) {
 
   const connection = mysql.createConnection(mysqlConnection);
 
-  connection.connect();
+  mysqlQuery({
+    sql: selectSql,
+    sqlParams: selectSqlParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
 
-  connection.query(selectSql, selectSqlParams, function(error, results, fields) {
-    if (error) throw error;
-
-    if (results.length === 0) {  // 该邮箱不存在
-      console.log('该邮箱不存在');
-      res.json({isEmailExisted: false});
-      return;
-    } else {  // 该邮箱已被注册
-      console.log('该邮箱已被注册');
-      res.json({isEmailExisted: true});
-      return;
+      if (results.length === 0) {  // 该邮箱不存在
+	console.log('该邮箱不存在');
+	res.json({isEmailExisted: false});
+	return;
+      } else {  // 该邮箱已被注册
+	console.log('该邮箱已被注册');
+	res.json({isEmailExisted: true});
+	return;
+      }
     }
   });
 });
@@ -283,150 +282,80 @@ app.post('/todo/getData', function(req, res, next) {
     SELECT uid FROM user WHERE username = ? AND email = ?
   `;
   const verificationParams = [username, email];
-  connection.query(verificationSql, verificationParams, function(error, results, fields) {
-    if (error) throw error;
+  mysqlQuery({
+    sql: verificationSql,
+    sqlParams: verificationParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
 
-    if (results[0].uid === uid) {
-      // 通过 lists 字段和 tasks 字段的值到对应的表中检索
-      const searchSql = `SELECT lists, tasks FROM user WHERE uid = ?`;
-      const searchParams = [uid];
-      connection.query(searchSql, searchParams, function(error, results, fields) {
-	if (error) throw error;
-	const { lists, tasks } = results[0];
-	const data = [];
+      if (results[0].uid === uid) {
+	// 通过 lists 字段和 tasks 字段的值到对应的表中检索
+	const searchSql = `SELECT lists, tasks FROM user WHERE uid = ?`;
+	const searchSqlParams = [uid];
+	mysqlQuery({
+	  sql: searchSql,
+	  sqlParams: searchSqlParams,
+	  callback: function(error, results, fields) {
+	    if (error) throw error;
+	    const { lists, tasks } = results[0];
+	    const data = [];
 
-	const searchListSql = `SELECT list_id, list_name FROM ${lists}`;
-	connection.query(searchListSql, function(error, results, fields) {
-	  if (error) throw error;
-	  if (results.length !== 0) {
-	    const listLength = results.length;
-	    results.forEach((listItem, listIndex) => {
-	      const searchTaskSql = `
-		SELECT list_id, task_id, text, completed, deleted
-		FROM ${tasks} WHERE list_id = ?`
-	      ;
-	      const searchTaskSqlParams = [listItem.list_id];
-	      connection.query(searchTaskSql, searchTaskSqlParams, function(error, results, fields) {
+	    const searchListSql = `SELECT list_id, list_name FROM ${lists}`;
+	    mysqlQuery({
+	      sql: searchListSql,
+	      callback: function(error, results, fields) {
 		if (error) throw error;
+		if (results.length !== 0) {
+		  const listLength = results.length;
+		  results.forEach((listItem, listIndex) => {
+		    const searchTaskSql = `
+		      SELECT list_id, task_id, text, completed, deleted
+		      FROM ${tasks} WHERE list_id = ?`
+		    ;
+		    const searchTaskSqlParams = [listItem.list_id];
+		    mysqlQuery({
+		      sql: searchTaskSql,
+		      sqlParams: searchTaskSqlParams,
+		      callback: function(error, results, fields) {
+			if (error) throw error;
 
-		results.reverse().forEach((taskItem, taskIndex) => {
-		  taskItem.id = taskItem.task_id;
+			results.reverse().forEach((taskItem, taskIndex) => {
+			  taskItem.id = taskItem.task_id;
 
-		  taskItem.completed === '0' ? 
-		    taskItem.completed = false :
-		    taskItem.completed = true;
-		  taskItem.deleted === '0' ? 
-		    taskItem.deleted = false :
-		    taskItem.deleted = true;
+			  taskItem.completed === '0' ? 
+			    taskItem.completed = false :
+			    taskItem.completed = true;
+			  taskItem.deleted === '0' ? 
+			    taskItem.deleted = false :
+			    taskItem.deleted = true;
 
-		  delete taskItem.list_id;
-		  delete taskItem.task_id;
-		});
+			  delete taskItem.list_id;
+			  delete taskItem.task_id;
+			});
 
-		data.push({
-		  id: listItem.list_id,
-		  box: listItem.list_name,
-		  dataList: results
-		});
+			data.push({
+			  id: listItem.list_id,
+			  box: listItem.list_name,
+			  dataList: results
+			});
 
-		if (listLength === listIndex + 1) {
-		  res.json({
-		    status: 0,
-		    message: 'success',
-		    username,
-		    data
+			if (listLength === listIndex + 1) {
+			  res.json({
+			    status: 0,
+			    message: 'success',
+			    username,
+			    data
+			  });
+			}
+		      }
+		    });
 		  });
 		}
-	      });
-	    });
-	  }
-	});
-
-	return;
-
-	// 联结查询：检索任务列表和任务项
-	const searchListsSql = `
-	  SELECT ${lists}.list_id, ${lists}.list_name, task_id, text, completed, deleted 
-	  FROM ${lists}, ${tasks}
-	  WHERE ${lists}.owner_list = ${tasks}.owner_list
-	`;
-	connection.query(searchListsSql, function(error, results, fields) {
-	  if (error) throw error;
-
-	  if (results.length !== 0) {
-	    results.forEach((taskItem, taskIndex) => {
-	      listIdArr.push(taskItem.list_id);
-	    });
-
-	    const uniqueListIds = Array.from(new Set(listIdArr));
-	    const data = uniqueListIds.map((uniqueListIdItem, uniqueListIdIndex) => {
-	      const tmp = {};
-
-	      let dataList = results.filter((taskItem, taskIndex) => {
-		if (uniqueListIdItem === taskItem.list_id) {
-		  tmp.id = taskItem.list_id;
-		  tmp.box = taskItem.list_name;
-		}
-		return uniqueListIdItem === taskItem.list_id;
-	      }).reverse();
-
-	      // 处理返回到前台的数据
-	      dataList.forEach((dataListItem, dataListIndex) => {
-		delete dataListItem.list_id;
-		delete dataListItem.list_name;
-
-		dataListItem.id = dataListItem.task_id;
-		delete dataListItem.task_id;
-
-		dataListItem.completed === '0' ?
-		  dataListItem.completed = false :
-		  dataListItem.completed = true;
-
-		dataListItem.deleted === '0' ?
-		  dataListItem.deleted = false :
-		  dataListItem.deleted = true;
-	      });
-
-	      return {
-		...tmp,
-		dataList
-	      };
-	    });
-
-	    res.json({
-	      status: 0,
-	      message: 'success',
-	      username,
-	      data
-	    });
-	  } else {
-	    connection.query(
-	      `SELECT ${lists}.list_id, ${lists}.list_name FROM ${lists}`,
-	      function (error, results, fields) {
-		if (error) throw error;
-
-		results.map((item, index) => {
-		  item.dataList = [];
-		  item.id = item.list_id;
-		  item.box = item.list_name;
-
-		  delete item.list_id;
-		  delete item.list_name;
-
-		  return item;
-		});
-
-		res.json({
-		  status: 0,
-		  message: 'success',
-		  username,
-		  data: results
-		});
 	      }
-	    );
+	    });
 	  }
 	});
-      });
+      }
     }
   });
 });
@@ -441,35 +370,43 @@ app.post('/todo/toggleTodoChecked', function(req, res, next) {
     SELECT uid, tasks FROM user WHERE username = ? AND email = ?
   `;
   const verificationParams = [username, email];
-  connection.query(verificationSql, verificationParams, function(error, results, fields) {
-    if (error) throw error;
+  mysqlQuery({
+    sql: verificationSql,
+    sqlParams: verificationParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
 
-    if (results[0].uid === uid) {
-      selectedTodos.forEach((selectedTodoItem, selectedTodoIndex) => {
-	const { listId, taskId } = selectedTodoItem;
-	let deleted = '';
+      if (results[0].uid === uid) {
+	selectedTodos.forEach((selectedTodoItem, selectedTodoIndex) => {
+	  const { listId, taskId } = selectedTodoItem;
+	  let deleted = '';
 
-	// 删除一条 todo
-	if (selectedTodoItem.completed) deleted = '1';
-	else deleted = '0';
+	  // 删除一条 todo
+	  if (selectedTodoItem.completed) deleted = '1';
+	  else deleted = '0';
 
-	const toggleTodoSql = `UPDATE ${results[0].tasks}
-	  SET completed = ${deleted} WHERE task_id = ?
-	`;
-	const toggleTodoSqlParams = [taskId];
-	connection.query(toggleTodoSql, toggleTodoSqlParams, function(error, results, fields) {
-	  if (error) throw error;
+	  const toggleTodoSql = `UPDATE ${results[0].tasks}
+	    SET completed = ${deleted} WHERE task_id = ?
+	  `;
+	  const toggleTodoSqlParams = [taskId];
+	  mysqlQuery({
+	    sql: toggleTodoSql,
+	    sqlParams: toggleTodoSqlParams,
+	    callback: function(error, results, fields) {
+	      if (error) throw error;
 
-	  if (results.affectedRows === 1) {
-	    res.json({
-	      status: 0,
-	      message: '删除成功',
-	      affedtedListId: listId,
-	      affedtedTaskId: taskId
-	    });
-	  }
+	      if (results.affectedRows === 1) {
+		res.json({
+		  status: 0,
+		  message: '删除成功',
+		  affedtedListId: listId,
+		  affedtedTaskId: taskId
+		});
+	      }
+	    }
+	  });
 	});
-      });
+      }
     }
   });
 });
@@ -485,32 +422,40 @@ app.post('/todo/addTodo', function(req, res, next) {
     SELECT uid, tasks FROM user WHERE username = ? AND email = ?
   `;
   const verificationParams = [username, email];
-  connection.query(verificationSql, verificationParams, function(error, results, fields) {
-    if (error) throw error;
+  mysqlQuery({
+    sql: verificationSql,
+    sqlParams: verificationParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
 
-    if (results[0].uid === uid) {
-      // 添加一条 todo
-      const addTodoSql = `INSERT INTO ${results[0].tasks} (
-        list_id, text, owner_list
-      ) VALUES (?, ?, ?)`;
-      const addTodoSqlParams = [list_id, text, list_id];
-      connection.query(addTodoSql, addTodoSqlParams, function(error, results, fields) {
-	if (error) throw error;
+      if (results[0].uid === uid) {
+	// 添加一条 todo
+	const addTodoSql = `INSERT INTO ${results[0].tasks} (
+	  list_id, text, owner_list
+	) VALUES (?, ?, ?)`;
+	const addTodoSqlParams = [list_id, text, list_id];
+	mysqlQuery({
+	  sql: addTodoSql,
+	  sqlParams: addTodoSqlParams,
+	  callback: function(error, results, fields) {
+	    if (error) throw error;
 
-	if (results.affectedRows === 1) {
-	  res.json({
-	    status: 0,
-	    message: '添加成功',
-	    listId: list_id,
-	    taskId: results.insertId
-	  });
-	} else {
-	  res.json({
-	    status: 1,
-	    message: '添加失败'
-	  });
-	}
-      });
+	    if (results.affectedRows === 1) {
+	      res.json({
+		status: 0,
+		message: '添加成功',
+		listId: list_id,
+		taskId: results.insertId
+	      });
+	    } else {
+	      res.json({
+		status: 1,
+		message: '添加失败'
+	      });
+	    }
+	  }
+	});
+      }
     }
   });
 });
@@ -528,29 +473,37 @@ app.post('/todo/deleteTodo', function(req, res, next) {
     SELECT uid, tasks FROM user WHERE username = ? AND email = ?
   `;
   const verificationParams = [username, email];
-  connection.query(verificationSql, verificationParams, function(error, results, fields) {
-    if (error) throw error;
+  mysqlQuery({
+    sql: verificationSql,
+    sqlParams: verificationParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
 
-    if (results[0].uid === uid) {
-      selectedTodos.forEach((selectedTodoItem, selectedTodoIndex) => {
-	const { listId, taskId } = selectedTodoItem;
+      if (results[0].uid === uid) {
+	selectedTodos.forEach((selectedTodoItem, selectedTodoIndex) => {
+	  const { listId, taskId } = selectedTodoItem;
 
-	// 删除一条 todo
-	const deleteTodoSql = `UPDATE ${results[0].tasks}
-	  SET deleted = '1' WHERE task_id = ?
-	`;
-	const deleteTodoSqlParams = [taskId];
-	connection.query(deleteTodoSql, deleteTodoSqlParams, function(error, results, fields) {
-	  if (error) throw error;
+	  // 删除一条 todo
+	  const deleteTodoSql = `UPDATE ${results[0].tasks}
+	    SET deleted = '1' WHERE task_id = ?
+	  `;
+	  const deleteTodoSqlParams = [taskId];
+	  mysqlQuery({
+	    sql: deleteTodoSql,
+	    sqlParams: deleteTodoSqlParams,
+	    callback: function(error, results, fields) {
+	      if (error) throw error;
 
-	  if (results.affectedRows === 1) {
-	    res.json({
-	      status: 0,
-	      message: '删除成功'
-	    });
-	  }
+	      if (results.affectedRows === 1) {
+		res.json({
+		  status: 0,
+		  message: '删除成功'
+		});
+	      }
+	    }
+	  });
 	});
-      });
+      }
     }
   });
 });
@@ -565,37 +518,49 @@ app.post('/todo/createList', function(req, res, next) {
     SELECT uid, lists FROM user WHERE username = ? AND email = ?
   `;
   const verificationParams = [username, email];
-  connection.query(verificationSql, verificationParams, function(error, results, fields) {
-    if (error) throw error;
-    const { lists } = results[0];
+  mysqlQuery({
+    sql: verificationSql,
+    sqlParams: verificationParams,
+    callback: function(error, results, fields) {
+      if (error) throw error;
+      const { lists } = results[0];
 
-    if (results[0].uid === uid) {
-      // 删除一条 todo
-      const createListSql = `INSERT INTO ${lists} (list_name) VALUES (?)`;
-      const createListSqlParams = [createdList];
-      connection.query(createListSql, createListSqlParams, function(error, results, fields) {
-	if (error) throw error;
-
-	if (results.affectedRows === 1) {
-	  const { insertId } = results;
-	  const updateListIdSql = `UPDATE ${lists} SET owner_list = ? WHERE list_id = ?`;
-	  const updateListIdSqlParams = [insertId, insertId];
-	  connection.query(updateListIdSql, updateListIdSqlParams, function(error, results, fields) {
+      if (results[0].uid === uid) {
+	// 删除一条 todo
+	const createListSql = `INSERT INTO ${lists} (list_name) VALUES (?)`;
+	const createListSqlParams = [createdList];
+	mysqlQuery({
+	  sql: createListSql,
+	  sqlParams: createListSqlParams,
+	  callback: function(error, results, fields) {
 	    if (error) throw error;
+
 	    if (results.affectedRows === 1) {
-	      res.json({
-		status: 0,
-		message: '创建成功',
-		data: {
-		  id: insertId,
-		  box: createdList,
-		  dataList: []
+	      const { insertId } = results;
+	      const updateListIdSql = `UPDATE ${lists} SET owner_list = ? WHERE list_id = ?`;
+	      const updateListIdSqlParams = [insertId, insertId];
+	      mysqlQuery({
+		sql: updateListIdSql,
+		sqlParams: updateListIdSqlParams,
+		callback: function(error, results, fields) {
+		  if (error) throw error;
+		  if (results.affectedRows === 1) {
+		    res.json({
+		      status: 0,
+		      message: '创建成功',
+		      data: {
+			id: insertId,
+			box: createdList,
+			dataList: []
+		      }
+		    });
+		  }
 		}
 	      });
 	    }
-	  });
-	}
-      });
+	  }
+	});
+      }
     }
   });
 });
