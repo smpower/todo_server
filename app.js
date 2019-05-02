@@ -1,4 +1,5 @@
 var express = require('express');
+var path = require('path');
 var http = require('http');
 var https = require('https');
 var fs = require('fs');
@@ -43,6 +44,7 @@ app.set('port', 1115);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
+app.use('/wundertodo', express.static(path.join(__dirname, '/website/wundertodo/build')));
 
 // 允许 Express 跨域
 app.all('*', function(req, res, next) {
