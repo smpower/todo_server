@@ -7,4 +7,8 @@ module.exports = [
     route: '/login',
     router: require('./login'),
   },
+  {
+    route: '/register',
+    router: require('./register')
+  }
 ]
